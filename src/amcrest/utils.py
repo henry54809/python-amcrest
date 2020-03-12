@@ -24,6 +24,9 @@ def clean_url(url):
     host = re.sub(r'/$', '', host)
     return host
 
+def config_parser(config):
+    filtered = filter(lambda c: '=' in c, config)
+    return dict(map(lambda c: c.split('='), filtered))
 
 def pretty(value, delimiter='='):
     """Format string key=value."""
@@ -45,6 +48,8 @@ def str2bool(value):
          True values: y, yes, true, t, on, 1
          False values: n, no, false, off, 0
     """
+    if not value:
+        return False
     try:
         if isinstance(value, (str, unicode)):
             return bool(util.strtobool(value))

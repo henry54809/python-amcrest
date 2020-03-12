@@ -1,3 +1,5 @@
 argcomplete
 requests
 urllib3
+pytz
+tzlocal

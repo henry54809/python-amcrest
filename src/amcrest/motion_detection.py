@@ -14,49 +14,39 @@ from amcrest.utils import str2bool
 
 
 class MotionDetection(object):
-    def __get_config(self, config_name):
-        ret = self.command(
-            'configManager.cgi?action=getConfig&name={0}'.format(config_name)
-        )
-        return ret.content.decode('utf-8')
+
+    @property
+    def motion_detection_raw(self):
+        return self.get_config("MotionDetect")
 
     @property
     def motion_detection(self):
-        return self.__get_config("MotionDetect")
+        return str2bool(self.get_config("MotionDetect[0].Enable").split('=')[-1].strip())
 
-    def is_motion_detector_on(self):
-        ret = self.motion_detection
-        status = [s for s in ret.split() if '.Enable=' in s][0]\
-            .split('=')[-1]
-        return str2bool(status)  # pylint: disable=no-value-for-parameter
+    @property
+    def motion_recording(self):
+        return str2bool(self.get_config("MotionDetect[0].EventHandler.RecordEnable").split('=')[-1].strip())
 
-    def is_record_on_motion_detection(self):
-        ret = self.motion_detection
-        status = [s for s in ret.split() if '.RecordEnable=' in s][0]\
-            .split('=')[-1]
-        return str2bool(status)  # pylint: disable=no-value-for-parameter
+    @property
+    def motion_snapshot(self):
+        return str2bool(self.get_config("MotionDetect[0].EventHandler.SnapshotEnabled").split('=')[-1].strip())
 
     @motion_detection.setter
     def motion_detection(self, opt):
-        if opt.lower() == "true" or opt.lower() == "false":
-            ret = self.command(
-                'configManager.cgi?action='
-                'setConfig&MotionDetect[0].Enable={0}'.format(opt.lower())
-            )
-            if "ok" in ret.content.decode('utf-8').lower():
-                return True
+        ret = self.set_config(('MotionDetect[0].Enable=', 'true' if opt else 'false'))
+        if "ok" not in ret.lower():
+            print(ret)
 
-        return False
-
-    @motion_detection.setter
+    @motion_recording.setter
     def motion_recording(self, opt):
-        if opt.lower() == "true" or opt.lower() == "false":
-            ret = self.command(
-                'configManager.cgi?action='
-                'setConfig&MotionDetect[0].EventHandler.RecordEnable={0}'
-                .format(opt.lower())
-            )
-            if "ok" in ret.content.decode('utf-8').lower():
-                return True
+        key = 'MotionDetect[0].EventHandler.RecordEnable'
+        ret = self.set_config((key, 'true' if opt else 'false'))
+        if "ok" not in ret.lower():
+            print(ret)
 
-        return False
+    @motion_snapshot.setter
+    def motion_snapshot(self, opt):
+        key = 'MotionDetect[0].EventHandler.SnapshotEnabled'
+        ret = self.set_config((key, 'true' if opt else 'false'))
+        if "ok" not in ret.lower():
+            print(ret)

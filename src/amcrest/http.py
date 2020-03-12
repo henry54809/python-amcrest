@@ -44,6 +44,7 @@ from .config import (
     KEEPALIVE_INTERVAL,
     MAX_RETRY_HTTP_CONNECTION,
     TIMEOUT_HTTP_PROTOCOL,
+    ConfigManager
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -71,7 +72,7 @@ class SOHTTPAdapter(HTTPAdapter):
 # pylint: disable=too-many-ancestors
 class Http(System, Network, MotionDetection, Snapshot,
            UserManagement, Event, Audio, Record, Video,
-           Log, Ptz, Special, Storage, Nas, Media):
+           Log, Ptz, Special, Storage, Nas, Media, ConfigManager):
 
     def __init__(self, host, port, user,
                  password, verbose=True, protocol='http', ssl_verify=True,

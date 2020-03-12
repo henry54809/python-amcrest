@@ -23,10 +23,7 @@ class Record(object):
 
     @property
     def record_config(self):
-        ret = self.command(
-            'configManager.cgi?action=getConfig&name=Record'
-        )
-        return ret.content.decode('utf-8')
+        return self.get_config('Record')
 
     @record_config.setter
     def record_config(self, rec_opt):
@@ -71,10 +68,7 @@ class Record(object):
 
     @property
     def media_global_config(self):
-        ret = self.command(
-            'configManager.cgi?action=getConfig&name=MediaGlobal'
-        )
-        return ret.content.decode('utf-8')
+        return self.get_config('MediaGlobal')
 
     @property
     def record_mode(self):
@@ -83,13 +77,10 @@ class Record(object):
                        2: 'Stop',
                        None: 'Unknown'}
 
-        ret = self.command(
-            'configManager.cgi?action=getConfig&name=RecordMode'
-        )
+        ret = self.get_config('RecordMode')
 
         try:
-            status = int([s for s in ret.content.decode(
-                'utf-8').split() if 'Mode=' in s][0].split('=')[-1])
+            status = int([s for s in ret.split() if 'Mode=' in s][0].split('=')[-1])
 
         # pylint: disable=bare-except
         except:

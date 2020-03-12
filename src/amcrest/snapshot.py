@@ -20,15 +20,10 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Snapshot(object):
-    def __get_config(self, config_name):
-        ret = self.command(
-            'configManager.cgi?action=getConfig&name={0}'.format(config_name)
-        )
-        return ret.content.decode('utf-8')
 
     @property
     def snapshot_config(self):
-        return self.__get_config('Snap')
+        return self.get_config('Snap')
 
     def snapshot(self, channel=None, path_file=None, timeout=None,
                  stream=True):

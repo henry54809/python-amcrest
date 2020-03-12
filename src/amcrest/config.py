@@ -24,3 +24,17 @@ KEEPALIVE_COUNT = 5
 # Retries - maximum number of retries each connection should attempt
 # Default value from requests library is 3
 MAX_RETRY_HTTP_CONNECTION = 3
+
+class ConfigManager(object):
+    def get_config(self, config_name):
+        ret = self.command(
+            'configManager.cgi?action=getConfig&name={0}'.format(config_name)
+        )
+        return ret.content.decode('utf-8')
+
+    def set_config(self, *argv):
+        config_strs = "&".join(map(lambda pair: str(pair[0]) + "=" + str(pair[1]), argv))
+        ret = self.command(
+            'configManager.cgi?action=setConfig&{0}'.format(config_strs)
+        )
+        return ret.content.decode('utf-8')

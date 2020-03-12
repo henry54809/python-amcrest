@@ -13,6 +13,17 @@
 # vim:sw=4:ts=4:et
 
 import datetime
+import pytz
+
+from amcrest.utils import str2bool
+
+SUPPORTED_TIMEZONES = dict([(k, v) for v, k in enumerate([
+    '+0000', '+0100', '+0200', '+0300', '+0330', '+0400', '+0430', '+0500',
+    '+0530', '+0545', '+0600', '+0630', '+0700', '+0800', '+0900', '+0930',
+    '+1000', '+1100', '+1200', '+1300', '-0100', '-0200', '-0300', '-0330',
+    '-0400', '-0500', '-0600', '-0700', '-0800', '-0900', '-1000', '-1100', '-1200'
+    ])
+])
 
 class System(object):
     """Amcrest system class."""
@@ -38,30 +49,49 @@ class System(object):
         """
         ret = self.command(
             'global.cgi?action=setCurrentTime&time={0}'.format(date)
+        ).content.decode('utf-8')
+
+        if "ok" not in ret.lower():
+            print(ret)
+
+    @property
+    def dst(self):
+        ret = filter(lambda row: row, self.get_config('Locales').replace('table.Locales.', '').split('\r\n'))
+        config = dict(map(lambda row: row.split('='), ret))
+        if not str2bool(config.get('DSTEnable')):
+            return False
+        return (
+            datetime.datetime(int(config['DSTStart.Year']), int(config['DSTStart.Month']), int(config['DSTStart.Day']), 
+            int(config['DSTStart.Hour']), int(config['DSTStart.Minute'])),
+            datetime.datetime(int(config['DSTEnd.Year']), int(config['DSTEnd.Month']), int(config['DSTEnd.Day']), 
+            int(config['DSTEnd.Hour']), int(config['DSTEnd.Minute']))
         )
-
-        if "ok" in ret.content.decode('utf-8').lower():
-            return True
-
-        return False
-
-    def __get_config(self, config_name):
-        ret = self.command(
-            'configManager.cgi?action=getConfig&name={0}'.format(config_name)
-        )
-        return ret.content.decode('utf-8')
-
-    def __set_config(self, *argv):
-        config_strs = "&".join(map(lambda pair: str(pair[0]) + "=" + str(pair[1]), argv))
-        print('configManager.cgi?action=setConfig&{0}'.format(config_strs))
-        ret = self.command(
-            'configManager.cgi?action=setConfig&{0}'.format(config_strs)
-        )
-        return ret.content.decode('utf-8')
+    
+    @dst.setter
+    def dst(self, config):
+        if config is None:
+            return self.set_config(("Locales.DSTEnable", "false"))
+        assert len(config) == 2 and isinstance(config[0], datetime.datetime) and isinstance(config[1], datetime.datetime)
+        dst_config = {
+            'Locales.DSTEnable': 'true',
+            'Locales.DSTStart.Year': config[0].year,
+            'Locales.DSTStart.Month': config[0].month,
+            'Locales.DSTStart.Day': config[0].day,
+            'Locales.DSTStart.Hour': config[0].hour,
+            'Locales.DSTStart.Minute': config[0].minute,
+            'Locales.DSTEnd.Year': config[1].year,
+            'Locales.DSTEnd.Month': config[1].month,
+            'Locales.DSTEnd.Day': config[1].day,
+            'Locales.DSTEnd.Hour': config[1].hour,
+            'Locales.DSTEnd.Minute': config[1].minute
+        }
+        ret = self.set_config(*dst_config.items())
+        if "ok" not in ret.lower():
+            print(ret)
 
     @property
     def general_config(self):
-        return self.__get_config('General')
+        return self.get_config('General')
 
     @property
     def version_http_api(self):
@@ -175,10 +205,10 @@ class System(object):
         ret = self.command(cmd)
         return ret.content.decode('utf-8')
 
-    def setAutoReboot(self, date, everyday=False):
+    def auto_reboot(self, date, everyday=False):
         # No reboot
         if date is None:
-            return self.__set_config(("AutoMaintain.AutoRebootDay", -1))
+            return self.set_config(("AutoMaintain.AutoRebootDay", -1))
         assert isinstance(date, datetime.datetime)
         date_info = date.timetuple()
         config = {
@@ -186,4 +216,4 @@ class System(object):
             "AutoMaintain.AutoRebootHour": date_info.tm_hour,
             "AutoMaintain.AutoRebootMinute": date_info.tm_min
         }
-        return self.__set_config(*config.items())
+        return self.set_config(*config.items())
