@@ -12,6 +12,7 @@
 # vim:sw=4:ts=4:et
 
 import logging
+from .utils import date_converter
 
 _LOGGER = logging.getLogger(__name__)
 # fmt: off
@@ -26,17 +27,29 @@ class Media(object):
         return ret.content.decode('utf-8')
 
     def factory_close(self, factory_id):
-        ret = self.command(
-            'mediaFileFind.cgi?action=factory.close&object={0}'
-            .format(factory_id)
-        )
+        try:
+            ret = self.command(
+                'mediaFileFind.cgi?action=factory.close&object={0}'
+                .format(factory_id)
+            )
+        except:
+            ret = self.command(
+                'mediaFileFind.cgi?action=close&object={0}'
+                .format(factory_id)
+            )
         return ret.content.decode('utf-8')
 
     def factory_destroy(self, factory_id):
-        ret = self.command(
-            'mediaFileFind.cgi?action=factory.destroy&object={0}'
-            .format(factory_id)
-        )
+        try:
+            ret = self.command(
+                'mediaFileFind.cgi?action=factory.destroy&object={0}'
+                .format(factory_id)
+            )
+        except:
+            ret = self.command(
+                'mediaFileFind.cgi?action=destroy&object={0}'
+                .format(factory_id)
+            )
         return ret.content.decode('utf-8')
 
     def media_file_find_start(self, factory_id,
@@ -88,8 +101,8 @@ class Media(object):
         ret = self.command(
             'mediaFileFind.cgi?action=findFile&object={0}&condition.Channel'
             '={1}&condition.StartTime={2}&condition.EndTime={3}{4}{5}{6}{7}{8}'
-            .format(factory_id, channel, start_time, end_time, c_dirs, c_types,
-                    c_flag, c_events, c_vs)
+            .format(factory_id, channel, date_converter(start_time), date_converter(end_time),
+                    c_dirs, c_types, c_flag, c_events, c_vs)
         )
         return ret.content.decode('utf-8')
 
@@ -124,7 +137,9 @@ class Media(object):
                 The index starts from 0. The range of event is {"AlarmLocal",
                 "VideoMotion", "VideoLoss", "VideoBlind", "Traffic*"}. This
                 condition can be omitted. If omitted, find files of all the
-                events. stream : which video stream type you want to find.
+                events.
+
+        stream : which video stream type you want to find.
                 The range of stream is {"Main", "Extra1", "Extra2", "Extra3"}.
                 If omitted, find files with all the stream types.
         """
@@ -158,10 +173,21 @@ class Media(object):
                 if tag == 'found':
                     count = int(count)
                 else:
-                    count = None
+                    continue
 
-                yield content
-
+                attrs = {}
+                i = 0
+                for row in content.split('\r\n')[1:]:
+                    if 'items[%d]' % (i + 1) in row:
+                        yield attrs
+                        attrs = {}
+                        i += 1
+                    if '=' not in row:
+                        continue
+                    k, v = row.split('=', 1)
+                    attrs[k.replace('items[%d].' % i, '')] = v
+                if len(attrs) > 0:
+                    yield attrs
             self.factory_close(factory_id)
             self.factory_destroy(factory_id)
         else:
@@ -190,7 +216,7 @@ class Media(object):
         ret = self.command(
             'loadfile.cgi?action=startLoad&channel={0}&startTime={1}'
             '&endTime={2}&subtype={3}'
-            .format(channel, start_time, end_time, stream)
+            .format(channel, date_converter(start_time), date_converter(end_time), stream)
         )
         return ret.content
 # fmt: on

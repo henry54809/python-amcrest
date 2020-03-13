@@ -12,6 +12,7 @@
 # vim:sw=4:ts=4:et
 
 import re
+import datetime
 
 # pylint: disable=no-name-in-module
 from distutils import util
@@ -35,6 +36,9 @@ def pretty(value, delimiter='='):
     except AttributeError:
         pass
 
+def date_converter(date):
+    assert isinstance(date, datetime.datetime)
+    return date.strftime("%Y-%m-%d %H:%M:%S")
 
 def percent(part, whole):
     """Convert data to percent"""
