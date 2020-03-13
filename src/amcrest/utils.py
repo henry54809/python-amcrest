@@ -18,6 +18,7 @@ import datetime
 from distutils import util
 
 PRECISION = 2
+DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 def clean_url(url):
@@ -37,8 +38,11 @@ def pretty(value, delimiter='='):
         pass
 
 def date_converter(date):
-    assert isinstance(date, datetime.datetime)
-    return date.strftime("%Y-%m-%d %H:%M:%S")
+    if isinstance(date, datetime.datetime):
+        return date.strftime("%Y-%m-%d %H:%M:%S")
+    elif isinstance(date, str):
+        return datetime.datetime.strptime(date, DATE_FORMAT)
+    assert "Unknown date type: %s" % str(date)
 
 def percent(part, whole):
     """Convert data to percent"""
